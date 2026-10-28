@@ -1,57 +1,137 @@
-# رأی‌گیری آزمایشی — FastAPI و Docker Compose
+# رأی‌گیری آزمایشی — FastAPI، Docker Compose و Nginx
 
-یک وب‌اپلیکیشن فارسی و راست‌چین برای رأی‌گیری آزمایشی «رأی‌گیری اخراج امیرعلی». رابط کاربری با FastAPI ارائه می‌شود، رأی‌ها در SQLite روی volume پایدار Docker ذخیره می‌شوند و Caddy به‌صورت خودکار HTTPS را برای `www.phanacacoffee.ir` فعال می‌کند.
+وب‌اپلیکیشن فارسی و راست‌چین برای نظرسنجی آزمایشی. FastAPI صفحه و API را سرو می‌کند، رأی‌ها در SQLite روی volume پایدار Docker نگه‌داری می‌شوند، Nginx روی خود VPS درخواست‌ها را به کانتینر FastAPI می‌فرستد و Certbot گواهی HTTPS را از Let’s Encrypt می‌گیرد و تمدید می‌کند.
 
-## پیش‌نیازهای سرور
+## راه‌اندازی از ورود به VPS
 
-- یک VPS با Docker Engine و Docker Compose plugin نصب‌شده.
-- دسترسی DNS دامنه و امکان بازکردن پورت‌های ورودی TCP شمارهٔ `80` و `443` در فایروال سیستم‌عامل و پنل VPS. UDP پورت `443` برای HTTP/3 اختیاری است.
-- رکورد DNS نوع `A` برای `www` که به IPv4 سرور اشاره کند. اگر برای `www` رکورد `AAAA` دارید، باید IPv6 سرور هم درست تنظیم و از اینترنت قابل دسترس باشد؛ در غیر این صورت آن رکورد را حذف کنید.
+دستورها برای Ubuntu هستند. اگر توزیع دیگری دارید، نام بسته‌های Docker ممکن است فرق کند. ابتدا از کامپیوتر خود با SSH به سرور وصل شوید:
 
-## راه‌اندازی روی VPS از صفر
+```bash
+ssh USER@IP_VPS
+```
 
-با SSH وارد سرور شوید. اگر Docker و افزونهٔ Compose نصب نیست، ابتدا آن‌ها را با دستورالعمل رسمی Docker برای توزیع لینوکس سرور نصب کنید. سپس مخزن را دریافت و سرویس‌ها را اجرا کنید:
+### ۱. DNS و فایروال
+
+در پنل مدیریت دامنه، رکورد `A` با نام `www` را روی IPv4 سرور تنظیم کنید. اگر رکورد `AAAA` برای `www` دارید، فقط وقتی نگهش دارید که IPv6 سرور واقعاً تنظیم و قابل دسترس باشد؛ در غیر این صورت حذفش کنید.
+
+اگر UFW را فعال می‌کنید، ابتدا دسترسی SSH و سپس وب را مجاز کنید تا اتصال SSH قطع نشود:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+sudo ufw status
+```
+
+اگر ارائه‌دهندهٔ VPS فایروال جداگانه‌ای دارد، TCP پورت‌های `80` و `443` را آنجا نیز باز کنید.
+
+### ۲. نصب ابزارها
+
+در Ubuntu می‌توانید Nginx، Certbot و ابزارهای لازم را نصب کنید:
+
+```bash
+sudo apt update
+sudo apt install -y nginx certbot python3-certbot-nginx git
+```
+
+اگر Docker و Compose هنوز نصب نیستند، در Ubuntu این بسته‌ها را نیز نصب کنید:
+
+```bash
+sudo apt install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+```
+
+بررسی نصب:
+
+```bash
+sudo docker --version
+sudo docker compose version
+sudo systemctl status nginx --no-pager
+```
+
+### ۳. دریافت پروژه و راه‌اندازی FastAPI
 
 ```bash
 git clone -b arena/430a1a60-test-site https://github.com/MAfzalirad/test_site.git poll-site
 cd poll-site
-docker compose up -d --build
+sudo docker compose up -d --build
+sudo docker compose ps
 ```
 
-اگر مخزن خصوصی است یا روی VPS دسترسی GitHub ندارید، فایل‌های این پروژه را با SFTP به سرور منتقل کنید و از داخل همان پوشه دستور `docker compose up -d --build` را اجرا کنید.
+FastAPI فقط روی `127.0.0.1:8000` در دسترس میزبان است و مستقیماً روی اینترنت منتشر نمی‌شود. سلامت آن را بررسی کنید:
 
-پس از انتشار DNS و موفقیت دریافت گواهی TLS، سایت در این نشانی باز می‌شود:
+```bash
+curl http://127.0.0.1:8000/healthz
+```
+
+باید پاسخی شبیه `{"status":"ok"}` ببینید.
+
+### ۴. اتصال Nginx به FastAPI
+
+فایل تنظیمات آمادهٔ پروژه را در محل Nginx کپی و فعال کنید:
+
+```bash
+sudo cp nginx/phanacacoffee.conf /etc/nginx/sites-available/phanacacoffee
+sudo ln -s /etc/nginx/sites-available/phanacacoffee /etc/nginx/sites-enabled/phanacacoffee
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+اگر دستور `ln` گفت فایل از قبل وجود دارد، لینک قبلاً فعال شده است؛ ادامه دهید.
+
+### ۵. دریافت و فعال‌کردن HTTPS
+
+وقتی DNS به IP سرور اشاره می‌کند و پورت 80 از اینترنت قابل دسترس است، اجرا کنید:
+
+```bash
+sudo certbot --nginx -d www.phanacacoffee.ir
+```
+
+ایمیل را وارد کنید و مراحل را تأیید کنید. Certbot گواهی را می‌گیرد، Nginx را برای HTTPS تنظیم می‌کند و تمدید خودکار را پیکربندی می‌کند. سپس باز کنید:
 
 ```text
 https://www.phanacacoffee.ir
 ```
 
-Caddy خودش گواهی TLS را دریافت و تمدید می‌کند. اگر دریافت گواهی انجام نشد، DNS دامنه، دسترسی عمومی پورت‌های 80 و 443 و گزارش‌های Caddy را بررسی کنید:
+تمدید خودکار را می‌توانید آزمایش کنید:
 
 ```bash
-docker compose ps
-docker compose logs -f caddy
-docker compose logs -f app
+sudo certbot renew --dry-run
 ```
 
-## مدیریت و به‌روزرسانی
-
-برای دریافت آخرین تغییرات و بازسازی سرویس‌ها:
+## عیب‌یابی
 
 ```bash
+sudo nginx -t
+sudo systemctl status nginx --no-pager
+sudo journalctl -u nginx -n 100 --no-pager
+sudo docker compose logs --tail=100 app
+sudo certbot certificates
+```
+
+اگر Certbot نتوانست گواهی بگیرد، بررسی کنید رکورد `A` به IP همین VPS اشاره کند، رکورد `AAAA` نامعتبر نداشته باشید و پورت 80 در فایروال سیستم و پنل VPS باز باشد. گواهی برای `www.phanacacoffee.ir` صادر می‌شود؛ اگر دامنهٔ بدون `www` هم لازم دارید، باید DNS و تنظیم Nginx/Certbot را برای آن دامنه نیز اضافه کنید.
+
+## به‌روزرسانی و داده‌ها
+
+برای دریافت تغییرات و بازسازی برنامه:
+
+```bash
+cd poll-site
 git pull
-docker compose up -d --build
+sudo docker compose up -d --build
 ```
 
-برای توقف سرویس‌ها:
+برای دیدن وضعیت و گزارش‌ها:
 
 ```bash
-docker compose down
+sudo docker compose ps
+sudo docker compose logs -f app
 ```
 
-داده‌ها در volume با نام `poll_data` ذخیره می‌شوند و با `docker compose down` باقی می‌مانند. **از `docker compose down -v` استفاده نکنید، مگر اینکه عمداً بخواهید رأی‌ها و دادهٔ گواهی‌ها را پاک کنید.** برنامه را از پورت `8000` مستقیماً به اینترنت منتشر نکنید؛ در تنظیم فعلی فقط Caddy روی پورت‌های وب در دسترس عمومی است.
+داده‌ها در volume به نام `poll_data` نگه‌داری می‌شوند و با `sudo docker compose down` پاک نمی‌شوند. از `sudo docker compose down -v` استفاده نکنید، مگر اینکه عمداً بخواهید داده‌های رأی‌گیری را حذف کنید.
 
-## آزمایش محلی بدون Docker
+## اجرای محلی بدون Docker
 
 ```bash
 python3 -m venv .venv
@@ -62,10 +142,6 @@ DATABASE_PATH=./poll.sqlite3 uvicorn app.main:app --reload
 
 سپس `http://127.0.0.1:8000` را باز کنید.
 
-## نکات مهم دربارهٔ رأی‌ها
+## نکته دربارهٔ رأی‌ها
 
-- رأی‌ها در پایگاه‌دادهٔ SQLite روی volume ذخیره می‌شوند و نتیجهٔ یکسانی را همهٔ بازدیدکنندگان می‌بینند.
-- برای جلوگیری ساده از رأی تکراری، یک شناسهٔ تصادفی در کوکی مرورگر نگه‌داری می‌شود. این روش احراز هویت نیست و با پاک‌کردن کوکی یا استفاده از مرورگر/دستگاه دیگر می‌توان دوباره رأی داد؛ برای نظرسنجی رسمی یا حساس، احراز هویت و محدودسازی درخواست لازم است.
-- این نمونه اطلاعات IP را ذخیره نمی‌کند. پیش از استفادهٔ عمومی، دربارهٔ هدف نظرسنجی و رضایت افراد مرتبط دقت کنید.
-- مسیر سلامت سرویس: `/healthz`. مسیرهای API: `GET /api/poll` و `POST /api/vote`.
-- تنظیم Caddy در `Caddyfile` فعلاً فقط نام `www.phanacacoffee.ir` را پوشش می‌دهد. برای فعال‌کردن دامنهٔ بدون `www` باید DNS آن نیز به سرور اشاره کند و Caddyfile متناسب با آن به‌روزرسانی شود.
+رأی‌ها در سرور ذخیره می‌شوند و نتیجه برای همهٔ بازدیدکنندگان مشترک است. جلوگیری از رأی تکراری با کوکی مرورگر انجام می‌شود؛ این احراز هویت نیست و با پاک‌کردن کوکی یا استفاده از دستگاه دیگر قابل دورزدن است. برای نظرسنجی رسمی یا حساس، احراز هویت و محدودسازی درخواست لازم است. این برنامه IP کاربران را ذخیره نمی‌کند.

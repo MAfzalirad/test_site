@@ -3,8 +3,9 @@ services:
     build: .
     restart: unless-stopped
     init: true
-    expose:
-      - "8000"
+    ports:
+      # Nginx runs on the VPS host; do not expose FastAPI publicly.
+      - "127.0.0.1:8000:8000"
     environment:
       DATABASE_PATH: /data/poll.sqlite3
     volumes:
@@ -20,23 +21,5 @@ services:
       retries: 3
       start_period: 10s
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    init: true
-    depends_on:
-      app:
-        condition: service_healthy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
 volumes:
   poll_data:
-  caddy_data:
-  caddy_config:
