@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5f1">
+  <meta name="description" content="صفحهٔ آزمایشی رای‌گیری">
+  <title>رای‌گیری اخراج امیرعلی</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202a27;
+      --muted: #75817b;
+      --green: #176b51;
+      --green-dark: #10513d;
+      --line: #e8e9e3;
+      --paper: #fff;
+      --bg: #f7f5f1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+      color: var(--ink);
+      background: radial-gradient(ellipse at 50% 0%, #eaf1e9 0, transparent 52%), var(--bg);
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .card {
+      width: min(100%, 520px);
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid rgba(30, 60, 45, .08);
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(35, 48, 39, .10);
+    }
+    .top {
+      padding: 30px 30px 25px;
+      text-align: center;
+      background: linear-gradient(145deg, #f1f6ef, #fbfaf6);
+      border-bottom: 1px solid var(--line);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 12px;
+      margin-bottom: 17px;
+      border-radius: 999px;
+      color: var(--green-dark);
+      background: #e3f0e7;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #58a478; }
+    h1 { margin: 0; font-size: clamp(23px, 6vw, 31px); line-height: 1.55; letter-spacing: -.4px; }
+    .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.9; }
+    .content { padding: 25px 30px 28px; }
+    .prompt { margin: 0 0 14px; font-size: 14px; font-weight: 700; }
+    .options { display: grid; gap: 10px; }
+    .option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 58px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: border-color .18s, background .18s, transform .18s;
+    }
+    .option:hover { border-color: #a8c7b5; transform: translateY(-1px); }
+    .option:has(input:checked) { border-color: var(--green); background: #f3f8f4; }
+    .option input { width: 18px; height: 18px; margin: 0; accent-color: var(--green); }
+    .option span { font-size: 14px; font-weight: 600; }
+    button {
+      width: 100%;
+      min-height: 51px;
+      margin-top: 17px;
+      border: 0;
+      border-radius: 13px;
+      color: #fff;
+      background: var(--green);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .18s, transform .18s;
+    }
+    button:hover { background: var(--green-dark); transform: translateY(-1px); }
+    button:focus-visible, .option:focus-within { outline: 3px solid #a9d5bb; outline-offset: 2px; }
+    .results { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .results-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .results-head h2 { margin: 0; font-size: 15px; }
+    .total { color: var(--muted); font-size: 12px; }
+    .result { margin-top: 13px; }
+    .result-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 7px; font-size: 12px; }
+    .result-label strong { font-weight: 600; }
+    .result-label span { color: var(--muted); direction: ltr; }
+    .track { height: 8px; overflow: hidden; border-radius: 99px; background: #eef0ec; }
+    .fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #57a47b, var(--green)); transition: width .45s ease; }
+    .notice { min-height: 20px; margin: 12px 0 0; color: var(--green-dark); font-size: 12px; text-align: center; }
+    .footnote { margin: 15px 0 0; color: var(--muted); font-size: 11px; line-height: 1.8; text-align: center; }
+    @media (max-width: 480px) { .top { padding: 25px 20px 21px; } .content { padding: 22px 20px 24px; } }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <header class="top">
+      <div class="badge">نظرسنجی آزمایشی</div>
+      <h1>رای‌گیری اخراج امیرعلی</h1>
+      <p class="subtitle">نظر خود را انتخاب کنید و رأی را ثبت کنید.</p>
+    </header>
+    <section class="content" aria-labelledby="question-title">
+      <p class="prompt" id="question-title">نظر شما چیست؟</p>
+      <form id="poll-form">
+        <div class="options">
+          <label class="option"><input type="radio" name="vote" value="yes"><span>موافق اخراج هستم</span></label>
+          <label class="option"><input type="radio" name="vote" value="no"><span>مخالف اخراج هستم</span></label>
+          <label class="option"><input type="radio" name="vote" value="abstain"><span>نظری ندارم</span></label>
+        </div>
+        <button type="submit">ثبت رأی</button>
+      </form>
+      <p class="notice" id="notice" role="status" aria-live="polite"></p>
+      <section class="results" aria-label="نتایج رأی‌گیری">
+        <div class="results-head"><h2>نتایج</h2><span class="total" id="total">۰ رأی</span></div>
+        <div class="result"><div class="result-label"><strong>موافق اخراج</strong><span id="yes-count">۰ · ۰٪</span></div><div class="track"><div class="fill" id="yes-bar"></div></div></div>
+        <div class="result"><div class="result-label"><strong>مخالف اخراج</strong><span id="no-count">۰ · ۰٪</span></div><div class="track"><div class="fill" id="no-bar"></div></div></div>
+        <div class="result"><div class="result-label"><strong>نظری ندارم</strong><span id="abstain-count">۰ · ۰٪</span></div><div class="track"><div class="fill" id="abstain-bar"></div></div></div>
+      </section>
+      <p class="footnote">این نسخه برای تست رابط کاربری است؛ رأی‌ها فقط در همین مرورگر ذخیره می‌شوند و بین کاربران یا دستگاه‌ها مشترک نیستند.</p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const options = ['yes', 'no', 'abstain'];
+      const labels = { yes: 'موافق اخراج', no: 'مخالف اخراج', abstain: 'نظری ندارم' };
+      const form = document.getElementById('poll-form');
+      const button = form.querySelector('button');
+      const notice = document.getElementById('notice');
+      const formatNumber = (number) => new Intl.NumberFormat('fa-IR').format(number);
+
+      const render = (data) => {
+        const counts = data.counts;
+        const total = data.total;
+        document.getElementById('total').textContent = `${formatNumber(total)} رأی`;
+        options.forEach((key) => {
+          const percent = total ? Math.round((counts[key] / total) * 100) : 0;
+          document.getElementById(`${key}-count`).textContent = `${formatNumber(counts[key])} · ${formatNumber(percent)}٪`;
+          document.getElementById(`${key}-bar`).style.width = `${percent}%`;
+        });
+        if (data.has_voted) {
+          button.disabled = true;
+          button.textContent = 'رأی شما ثبت شده است';
+          notice.textContent = 'هر مرورگر می‌تواند یک‌بار رأی ثبت کند.';
+        }
+      };
+
+      const loadPoll = async () => {
+        try {
+          const response = await fetch('/api/poll');
+          if (!response.ok) throw new Error('Could not load poll');
+          render(await response.json());
+        } catch {
+          notice.textContent = 'ارتباط با سرور برقرار نشد؛ صفحه را دوباره بارگذاری کنید.';
+        }
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const choice = new FormData(form).get('vote');
+        if (!options.includes(choice)) {
+          notice.textContent = 'لطفاً یکی از گزینه‌ها را انتخاب کنید.';
+          return;
+        }
+        button.disabled = true;
+        notice.textContent = 'در حال ثبت رأی…';
+        try {
+          const response = await fetch('/api/vote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ choice }),
+          });
+          if (response.status === 409) {
+            notice.textContent = 'رأی شما قبلاً ثبت شده است.';
+            await loadPoll();
+            return;
+          }
+          if (!response.ok) throw new Error('Could not submit vote');
+          const data = await response.json();
+          data.has_voted = true;
+          render(data);
+          notice.textContent = `رأی شما برای «${labels[choice]}» ثبت شد.`;
+          form.reset();
+        } catch {
+          button.disabled = false;
+          notice.textContent = 'ثبت رأی انجام نشد؛ لطفاً دوباره تلاش کنید.';
+        }
+      });
+
+      loadPoll();
+    })();
+  </script>
+</body>
+</html>
